@@ -41,33 +41,28 @@ const connection = async () => {
 
 const startSession = async (from) => {
   const db = await connection();
-  const query =
-    "INSERT INTO `sessions` (`from`, `expired_at`) VALUES (?, UNIX_TIMESTAMP() + 1800)";
+  const query = "INSERT INTO `sessions` (`from`, `expired_at`) VALUES (?, UNIX_TIMESTAMP() + 1800)";
   await db.execute(query, [from]);
   await db.end();
 };
 
 const endSession = async (from) => {
   const db = await connection();
-  const query =
-    "UPDATE `sessions` SET `expired_at` = UNIX_TIMESTAMP() WHERE `from` = ? AND `expired_at` > UNIX_TIMESTAMP()";
+  const query = "UPDATE `sessions` SET `expired_at` = UNIX_TIMESTAMP() WHERE `from` = ? AND `expired_at` > UNIX_TIMESTAMP()";
   await db.execute(query, [from]);
   await db.end();
 };
 
 const getSession = async (from) => {
   const db = await connection();
-  const query =
-    "SELECT `id` FROM `sessions` WHERE `from` = ? AND `expired_at` > UNIX_TIMESTAMP() ORDER BY `expired_at` DESC LIMIT 1";
+  const query = "SELECT `id` FROM `sessions` WHERE `from` = ? AND `expired_at` > UNIX_TIMESTAMP() ORDER BY `expired_at` DESC LIMIT 1";
   const [rows] = await db.query(query, [from]);
   await db.end();
   return rows[0] || false;
 };
 
 const getAnswer = async (ask) => {
-  const response = await axios.post(ENDPOINT_BEDROCK + "/chatbot", {
-    query: ask,
-  });
+  const response = await axios.post(ENDPOINT_BEDROCK + "/chatbot", { query: ask });
   return response.data.answer || response.data.error;
 };
 
@@ -83,7 +78,7 @@ client.on("qr", (qr) => {
 
 client.on("message", async (message) => {
   const session = await getSession(message.from);
-  if (message.body == "!ato.ai") {
+  if (message.body == "!start.ai") {
     const chat = await message.getChat();
     chat.sendStateTyping();
     await startSession(message.from);
@@ -93,6 +88,7 @@ client.on("message", async (message) => {
   } else if (message.body == "!end.ai") {
     const chat = await message.getChat();
     chat.sendStateTyping();
+    await endSession(message.from);
     await sleep(2000);
     chat.clearState();
     client.sendMessage(message.from, "Bye");
