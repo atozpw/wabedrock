@@ -61,8 +61,8 @@ const getSession = async (from) => {
   return rows[0] || false;
 };
 
-const getAnswer = async (ask) => {
-  const response = await axios.post(ENDPOINT_BEDROCK + "/chatbot", { query: ask });
+const getAnswer = async (ask, from) => {
+  const response = await axios.post(ENDPOINT_BEDROCK + "/chatbot", { query: ask, session_id: from });
   return response.data.answer || response.data.error;
 };
 
@@ -95,7 +95,7 @@ client.on("message", async (message) => {
   } else if (session) {
     const chat = await message.getChat();
     chat.sendStateTyping();
-    const answer = await getAnswer(message.body);
+    const answer = await getAnswer(message.body, message.from);
     chat.clearState();
     client.sendMessage(message.from, answer);
   }
